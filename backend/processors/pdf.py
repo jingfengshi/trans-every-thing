@@ -1,7 +1,22 @@
 import fitz
+from pathlib import Path
 from .base import BaseProcessor, TextBlock
 
-FALLBACK_FONT = "cjk"
+# 系统 CJK 字体候选路径（Docker 容器内 + macOS）
+_CJK_FONT_PATHS = [
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    "/System/Library/Fonts/PingFang.ttc",
+    "/System/Library/Fonts/STHeiti Light.ttc",
+]
+
+
+def _find_cjk_font() -> str | None:
+    for p in _CJK_FONT_PATHS:
+        if Path(p).exists():
+            return p
+    return None
 
 
 class PDFProcessor(BaseProcessor):
@@ -38,6 +53,7 @@ class PDFProcessor(BaseProcessor):
 
     def rebuild(self, original_path: str, blocks: list[TextBlock], output_path: str) -> None:
         doc = fitz.open(original_path)
+        cjk_font_path = _find_cjk_font()
 
         pages_blocks: dict[int, list[TextBlock]] = {}
         for block in blocks:
@@ -45,23 +61,41 @@ class PDFProcessor(BaseProcessor):
 
         for page_num, page_blocks in pages_blocks.items():
             page = doc[page_num]
+
+            # 注册 CJK 字体到页面
+            font_name = "helv"
+            if cjk_font_path:
+                try:
+                    page.insert_font(fontname="cjkfont", fontfile=cjk_font_path)
+                    font_name = "cjkfont"
+                except Exception:
+                    pass
+
             for block in page_blocks:
                 rect = fitz.Rect(block.x, block.y, block.x + block.width, block.y + block.height)
+                # 白色矩形覆盖原文字
                 page.draw_rect(rect, color=(1, 1, 1), fill=(1, 1, 1))
+                color = self._int_to_rgb(block.metadata.get("color", 0))
+                y_pos = block.y + block.height * 0.85
+
+                # 先尝试用 CJK 字体写入，失败则用 textbox 自动换行
                 try:
                     page.insert_text(
-                        (block.x, block.y + block.height * 0.8),
+                        (block.x, y_pos),
                         block.text,
+                        fontname=font_name,
                         fontsize=block.font_size,
-                        color=self._int_to_rgb(block.metadata.get("color", 0)),
+                        color=color,
                     )
                 except Exception:
-                    page.insert_text(
-                        (block.x, block.y + block.height * 0.8),
+                    # 最后兜底：用 insert_textbox 塞进原 bbox
+                    page.insert_textbox(
+                        rect,
                         block.text,
-                        fontname=FALLBACK_FONT,
-                        fontsize=block.font_size,
-                        color=self._int_to_rgb(block.metadata.get("color", 0)),
+                        fontname=font_name,
+                        fontsize=max(block.font_size - 1, 6),
+                        color=color,
+                        align=0,
                     )
 
         doc.save(output_path)
