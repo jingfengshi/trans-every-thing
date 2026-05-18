@@ -1,84 +1,89 @@
 <template>
-  <div class="card progress-card">
-    <div class="status-icon">{{ statusIcon }}</div>
-    <div class="status-text">{{ statusText }}</div>
-
-    <div class="bar-wrap">
-      <div class="bar-track">
-        <div
-          class="bar-fill"
-          :class="{ pulse: status === 'processing' }"
-          :style="{ width: `${Math.round(progress * 100)}%` }"
+  <div class="glass progress-wrap">
+    <div class="orbit">
+      <svg class="ring" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="5"/>
+        <circle
+          cx="40" cy="40" r="34"
+          fill="none"
+          stroke="url(#grad)"
+          stroke-width="5"
+          stroke-linecap="round"
+          :stroke-dasharray="`${213.6 * progress} 213.6`"
+          transform="rotate(-90 40 40)"
+          style="transition: stroke-dasharray 0.5s ease"
         />
-      </div>
-      <span class="bar-pct">{{ Math.round(progress * 100) }}%</span>
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#60a5fa"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="pct">{{ Math.round(progress * 100) }}<span>%</span></div>
     </div>
 
-    <div v-if="error" class="error-box">
-      <span>⚠️</span> {{ error }}
+    <div class="status-title">{{ statusText }}</div>
+    <div class="status-sub" v-if="status === 'processing'">正在调用翻译引擎，请稍候...</div>
+
+    <div class="bar-row">
+      <div class="bar-track">
+        <div class="bar-fill" :style="{ width: `${progress * 100}%` }" />
+      </div>
     </div>
+
+    <div v-if="error" class="error-box">⚠ {{ error }}</div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-
 const props = defineProps({ status: String, progress: Number, error: String })
 
-const statusIcon = computed(() => ({
-  pending: '⏳', processing: '⚙️', done: '✅', failed: '❌'
-}[props.status] || '⏳'))
-
 const statusText = computed(() => ({
-  pending: '等待处理...',
-  processing: `正在翻译中，请稍候`,
-  done: '翻译完成！',
+  pending: '正在排队...',
+  processing: '翻译中',
+  done: '翻译完成 🎉',
   failed: '翻译失败',
 }[props.status] || props.status))
 </script>
 
 <style scoped>
-.progress-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 48px 32px;
-  text-align: center;
+.progress-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 20px; padding: 48px 32px; text-align: center;
 }
-.status-icon { font-size: 48px; }
-.status-text { font-size: 18px; font-weight: 500; color: #111827; }
 
-.bar-wrap { width: 100%; display: flex; align-items: center; gap: 12px; }
+.orbit { position: relative; width: 100px; height: 100px; }
+.ring { width: 100%; height: 100%; }
+.pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.9);
+}
+.pct span { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+.status-title { font-size: 20px; font-weight: 600; color: rgba(255,255,255,0.9); }
+.status-sub { font-size: 13px; color: rgba(255,255,255,0.35); margin-top: -12px; }
+
+.bar-row { width: 100%; }
 .bar-track {
-  flex: 1;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 99px;
-  overflow: hidden;
+  height: 4px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden;
 }
 .bar-fill {
   height: 100%;
-  background: #6366f1;
+  background: linear-gradient(90deg, #7c3aed, #60a5fa);
   border-radius: 99px;
-  transition: width 0.4s ease;
+  transition: width 0.5s ease;
 }
-.bar-fill.pulse {
-  background: linear-gradient(90deg, #6366f1, #a78bfa, #6366f1);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-.bar-pct { font-size: 13px; font-weight: 500; color: #6b7280; width: 36px; text-align: right; }
 
 .error-box {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: #dc2626;
-  width: 100%;
-  text-align: left;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #fca5a5;
+  width: 100%; text-align: left;
 }
 </style>

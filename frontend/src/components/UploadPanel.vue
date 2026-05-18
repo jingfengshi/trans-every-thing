@@ -1,5 +1,6 @@
 <template>
-  <div class="card">
+  <div class="glass">
+    <!-- 拖拽区 -->
     <div
       class="drop-zone"
       :class="{ dragover, 'has-file': file }"
@@ -9,25 +10,37 @@
       @click="$refs.fileInput.click()"
     >
       <input ref="fileInput" type="file" accept=".pdf" hidden @change="onFileChange" />
-      <div class="drop-icon">{{ file ? '📄' : '☁️' }}</div>
-      <div class="drop-text">
-        <span v-if="!file">拖拽 PDF 到此处，或<em>点击选择</em></span>
-        <span v-else class="file-name">{{ file.name }}</span>
+      <div class="drop-icon">
+        <svg v-if="!file" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 16v2a2 2 0 002 2h14a2 2 0 002-2v-2" stroke-linecap="round"/>
+        </svg>
+        <svg v-else width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <path d="M14 2v6h6M9 13h6M9 17h4" stroke-linecap="round"/>
+        </svg>
       </div>
-      <div v-if="file" class="file-size">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</div>
+      <div class="drop-primary">
+        <template v-if="!file">拖拽 PDF 到此处<br><em>或点击选择文件</em></template>
+        <template v-else>{{ file.name }}</template>
+      </div>
+      <div class="drop-secondary">
+        {{ file ? ((file.size / 1024 / 1024).toFixed(2) + ' MB') : '支持 PDF 格式，最大 50MB' }}
+      </div>
     </div>
 
+    <!-- 引擎 + 语言 -->
     <div class="row">
-      <div class="field">
-        <label>翻译引擎</label>
+      <label class="field-label">
+        引擎
         <select v-model="engine">
           <option value="claude">Claude</option>
           <option value="openai">OpenAI</option>
           <option value="google">Google</option>
         </select>
-      </div>
-      <div class="field">
-        <label>目标语言</label>
+      </label>
+      <label class="field-label">
+        目标语言
         <select v-model="targetLang">
           <option value="zh">中文</option>
           <option value="en">English</option>
@@ -37,21 +50,24 @@
           <option value="de">Deutsch</option>
           <option value="es">Español</option>
         </select>
-      </div>
+      </label>
     </div>
 
-    <div class="field">
-      <label>翻译风格 <span class="optional">可选</span></label>
+    <!-- 风格提示词 -->
+    <label class="field-label">
+      翻译风格 <span class="opt">可选</span>
       <textarea
         v-model="stylePrompt"
         placeholder="例如：翻译成粤语、保留专业术语、使用口语化表达..."
         rows="3"
       />
-    </div>
+    </label>
 
-    <button class="btn-primary" :disabled="!file || loading" @click="submit">
+    <!-- 提交 -->
+    <button class="btn-submit" :disabled="!file || loading" @click="submit">
       <span v-if="loading" class="spinner" />
-      {{ loading ? '提交中...' : '开始翻译' }}
+      <span v-else class="btn-arrow">→</span>
+      {{ loading ? '处理中...' : '开始翻译' }}
     </button>
   </div>
 </template>
@@ -77,76 +93,75 @@ async function submit() {
   try {
     const data = await submitTranslate(file.value, engine.value, targetLang.value, stylePrompt.value)
     emit('submitted', data.task_id)
-  } finally {
-    loading.value = false
-  }
+  } finally { loading.value = false }
 }
 </script>
 
 <style scoped>
-.card { display: flex; flex-direction: column; gap: 20px; }
+.glass { display: flex; flex-direction: column; gap: 20px; }
 
 .drop-zone {
-  border: 2px dashed #d1d5db;
-  border-radius: 12px;
-  padding: 40px 24px;
+  border: 1.5px dashed rgba(255,255,255,0.18);
+  border-radius: 14px;
+  padding: 36px 24px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
-  background: #fafafa;
+  transition: all 0.25s;
+  background: rgba(255,255,255,0.03);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .drop-zone:hover, .drop-zone.dragover {
-  border-color: #6366f1;
-  background: #f5f3ff;
+  border-color: rgba(160,110,255,0.7);
+  background: rgba(130,80,255,0.08);
+  box-shadow: 0 0 24px rgba(130,80,255,0.12) inset;
 }
 .drop-zone.has-file {
   border-style: solid;
-  border-color: #6366f1;
-  background: #f5f3ff;
+  border-color: rgba(120,180,255,0.5);
+  background: rgba(80,130,255,0.07);
 }
-.drop-icon { font-size: 36px; margin-bottom: 10px; }
-.drop-text { font-size: 15px; color: #6b7280; }
-.drop-text em { color: #6366f1; font-style: normal; font-weight: 500; }
-.file-name { color: #111827; font-weight: 500; word-break: break-all; }
-.file-size { font-size: 12px; color: #9ca3af; margin-top: 4px; }
 
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.drop-icon { color: rgba(255,255,255,0.4); }
+.drop-zone.dragover .drop-icon, .drop-zone.has-file .drop-icon { color: rgba(180,140,255,0.9); }
 
-.field { display: flex; flex-direction: column; gap: 6px; }
-label { font-size: 13px; font-weight: 500; color: #374151; }
-.optional { font-weight: 400; color: #9ca3af; margin-left: 4px; }
-
-select, textarea {
-  padding: 10px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #111827;
-  background: white;
-  transition: border-color 0.15s;
-  outline: none;
-  font-family: inherit;
+.drop-primary {
+  font-size: 15px;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.5;
 }
-select:focus, textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
-textarea { resize: vertical; }
+.drop-primary em { color: #a78bfa; font-style: normal; }
+.drop-secondary { font-size: 12px; color: rgba(255,255,255,0.3); }
 
-.btn-primary {
-  padding: 12px 24px;
-  background: #6366f1;
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.field-label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.4); letter-spacing: 0.6px; text-transform: uppercase; }
+.opt { font-weight: 400; color: rgba(255,255,255,0.2); text-transform: none; letter-spacing: 0; margin-left: 4px; }
+
+.btn-submit {
+  margin-top: 4px;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(120,60,220,0.4);
+  letter-spacing: 0.3px;
 }
-.btn-primary:hover:not(:disabled) { background: #4f46e5; }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9, #4338ca);
+  box-shadow: 0 6px 28px rgba(120,60,220,0.55);
+  transform: translateY(-1px);
+}
+.btn-submit:active:not(:disabled) { transform: translateY(0); }
+.btn-submit:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+.btn-arrow { font-size: 18px; }
 
 .spinner {
   width: 16px; height: 16px;
