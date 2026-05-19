@@ -21,7 +21,7 @@
         </svg>
       </div>
       <div class="drop-primary">
-        <template v-if="!file">拖拽 PDF 到此处<br><em>或点击选择文件</em></template>
+        <template v-if="!file">拖拽文件到此处<br><em>或点击选择</em></template>
         <template v-else>{{ file.name }}</template>
       </div>
       <div class="drop-secondary">
@@ -31,37 +31,74 @@
 
     <!-- 引擎 + 语言 -->
     <div class="row">
-      <label class="field-label">
-        引擎
-        <select v-model="engine">
-          <option value="claude">Claude</option>
-          <option value="openai">OpenAI</option>
-          <option value="google">Google</option>
-        </select>
-      </label>
-      <label class="field-label">
-        目标语言
-        <select v-model="targetLang">
-          <option value="zh">中文</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
-          <option value="ko">한국어</option>
-          <option value="fr">Français</option>
-          <option value="de">Deutsch</option>
-          <option value="es">Español</option>
-        </select>
-      </label>
+      <div class="field">
+        <span class="field-label">引擎</span>
+        <div class="custom-select" :class="{ open: engineOpen }" @click.stop="engineOpen = !engineOpen" ref="engineRef">
+          <div class="select-trigger">
+            <span class="select-icon">{{ engineIcon }}</span>
+            <span class="select-value">{{ engineLabel }}</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+          <div class="select-dropdown" v-if="engineOpen">
+            <div
+              v-for="opt in engineOptions"
+              :key="opt.value"
+              class="select-option"
+              :class="{ active: engine === opt.value }"
+              @click.stop="engine = opt.value; engineOpen = false"
+            >
+              <span class="opt-icon">{{ opt.icon }}</span>
+              <span>{{ opt.label }}</span>
+              <svg v-if="engine === opt.value" class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12l5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">目标语言</span>
+        <div class="custom-select" :class="{ open: langOpen }" @click.stop="langOpen = !langOpen" ref="langRef">
+          <div class="select-trigger">
+            <span class="select-icon">{{ langIcon }}</span>
+            <span class="select-value">{{ langLabel }}</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+          <div class="select-dropdown" v-if="langOpen">
+            <div
+              v-for="opt in langOptions"
+              :key="opt.value"
+              class="select-option"
+              :class="{ active: targetLang === opt.value }"
+              @click.stop="targetLang = opt.value; langOpen = false"
+            >
+              <span class="opt-icon">{{ opt.icon }}</span>
+              <span>{{ opt.label }}</span>
+              <svg v-if="targetLang === opt.value" class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12l5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 风格提示词 -->
-    <label class="field-label">
-      翻译风格 <span class="opt">可选</span>
-      <textarea
-        v-model="stylePrompt"
-        placeholder="例如：翻译成粤语、保留专业术语、使用口语化表达..."
-        rows="3"
-      />
-    </label>
+    <div class="field">
+      <span class="field-label">翻译风格 <span class="opt-tag">可选</span></span>
+      <div class="textarea-wrap">
+        <textarea
+          v-model="stylePrompt"
+          placeholder="例如：翻译成粤语、保留专业术语、使用口语化表达..."
+          rows="3"
+        />
+      </div>
+    </div>
 
     <!-- 提交 -->
     <button class="btn-submit" :disabled="!file || loading" @click="submit">
@@ -73,19 +110,53 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { submitTranslate } from '../api.js'
 
 const emit = defineEmits(['submitted'])
+
 const file = ref(null)
 const engine = ref('claude')
 const targetLang = ref('zh')
 const stylePrompt = ref('')
 const dragover = ref(false)
 const loading = ref(false)
+const engineOpen = ref(false)
+const langOpen = ref(false)
+const engineRef = ref(null)
+const langRef = ref(null)
+
+const engineOptions = [
+  { value: 'claude', label: 'Claude',  icon: '✦' },
+  { value: 'openai', label: 'OpenAI',  icon: '◎' },
+  { value: 'google', label: 'Google',  icon: '⬡' },
+]
+
+const langOptions = [
+  { value: 'zh', label: '中文',     icon: '🇨🇳' },
+  { value: 'en', label: 'English',  icon: '🇺🇸' },
+  { value: 'ja', label: '日本語',   icon: '🇯🇵' },
+  { value: 'ko', label: '한국어',   icon: '🇰🇷' },
+  { value: 'fr', label: 'Français', icon: '🇫🇷' },
+  { value: 'de', label: 'Deutsch',  icon: '🇩🇪' },
+  { value: 'es', label: 'Español',  icon: '🇪🇸' },
+]
+
+const engineLabel = computed(() => engineOptions.find(o => o.value === engine.value)?.label)
+const engineIcon  = computed(() => engineOptions.find(o => o.value === engine.value)?.icon)
+const langLabel   = computed(() => langOptions.find(o => o.value === targetLang.value)?.label)
+const langIcon    = computed(() => langOptions.find(o => o.value === targetLang.value)?.icon)
 
 function onFileChange(e) { file.value = e.target.files[0] || null }
 function onDrop(e) { dragover.value = false; file.value = e.dataTransfer.files[0] || null }
+
+function onClickOutside(e) {
+  if (engineRef.value && !engineRef.value.contains(e.target)) engineOpen.value = false
+  if (langRef.value && !langRef.value.contains(e.target)) langOpen.value = false
+}
+
+onMounted(() => document.addEventListener('click', onClickOutside))
+onUnmounted(() => document.removeEventListener('click', onClickOutside))
 
 async function submit() {
   if (!file.value) return
@@ -100,12 +171,11 @@ async function submit() {
 <style scoped>
 .glass { display: flex; flex-direction: column; gap: 20px; }
 
+/* drop zone */
 .drop-zone {
   border: 1.5px dashed rgba(255,255,255,0.18);
-  border-radius: 14px;
-  padding: 36px 24px;
-  text-align: center;
-  cursor: pointer;
+  border-radius: 14px; padding: 36px 24px;
+  text-align: center; cursor: pointer;
   transition: all 0.25s;
   background: rgba(255,255,255,0.03);
   display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -113,41 +183,107 @@ async function submit() {
 .drop-zone:hover, .drop-zone.dragover {
   border-color: rgba(160,110,255,0.7);
   background: rgba(130,80,255,0.08);
-  box-shadow: 0 0 24px rgba(130,80,255,0.12) inset;
 }
 .drop-zone.has-file {
-  border-style: solid;
-  border-color: rgba(120,180,255,0.5);
+  border-style: solid; border-color: rgba(120,180,255,0.5);
   background: rgba(80,130,255,0.07);
 }
-
 .drop-icon { color: rgba(255,255,255,0.4); }
 .drop-zone.dragover .drop-icon, .drop-zone.has-file .drop-icon { color: rgba(180,140,255,0.9); }
-
-.drop-primary {
-  font-size: 15px;
-  color: rgba(255,255,255,0.75);
-  line-height: 1.5;
-}
+.drop-primary { font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.5; }
 .drop-primary em { color: #a78bfa; font-style: normal; }
 .drop-secondary { font-size: 12px; color: rgba(255,255,255,0.3); }
 
+/* layout */
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-label {
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.8px; text-transform: uppercase;
+}
+.opt-tag {
+  font-weight: 400; color: rgba(255,255,255,0.2);
+  text-transform: none; letter-spacing: 0; margin-left: 4px;
+}
 
-.field-label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.4); letter-spacing: 0.6px; text-transform: uppercase; }
-.opt { font-weight: 400; color: rgba(255,255,255,0.2); text-transform: none; letter-spacing: 0; margin-left: 4px; }
-
-.btn-submit {
-  margin-top: 4px;
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+/* custom select */
+.custom-select {
+  position: relative; user-select: none;
+}
+.select-trigger {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
   cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.custom-select:hover .select-trigger,
+.custom-select.open .select-trigger {
+  border-color: rgba(160,110,255,0.5);
+  background: rgba(255,255,255,0.09);
+}
+.select-icon { font-size: 15px; line-height: 1; }
+.select-value { flex: 1; font-size: 14px; color: rgba(255,255,255,0.9); }
+.chevron {
+  color: rgba(255,255,255,0.3); flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.custom-select.open .chevron { transform: rotate(180deg); }
+
+.select-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: #1a1a35;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.select-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 14px; color: rgba(255,255,255,0.7);
+  transition: background 0.15s;
+}
+.select-option:hover { background: rgba(255,255,255,0.07); }
+.select-option.active { color: #c4b5fd; background: rgba(99,60,180,0.15); }
+.opt-icon { font-size: 15px; flex-shrink: 0; }
+.check { margin-left: auto; color: #a78bfa; flex-shrink: 0; }
+
+/* textarea */
+.textarea-wrap {
+  position: relative;
+}
+.textarea-wrap textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  font-size: 14px; color: rgba(255,255,255,0.85);
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  line-height: 1.6;
+}
+.textarea-wrap textarea::placeholder { color: rgba(255,255,255,0.22); }
+.textarea-wrap textarea:focus {
+  border-color: rgba(160,110,255,0.5);
+  box-shadow: 0 0 0 3px rgba(140,90,255,0.1);
+  background: rgba(255,255,255,0.08);
+}
+
+/* submit */
+.btn-submit {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: white; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: all 0.2s;
   box-shadow: 0 4px 20px rgba(120,60,220,0.4);
@@ -160,14 +296,11 @@ async function submit() {
 }
 .btn-submit:active:not(:disabled) { transform: translateY(0); }
 .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-
 .btn-arrow { font-size: 18px; }
-
 .spinner {
   width: 16px; height: 16px;
   border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
+  border-top-color: white; border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
