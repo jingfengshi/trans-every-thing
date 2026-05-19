@@ -62,7 +62,19 @@ class PDFProcessor(BaseProcessor):
         for page_num, page_blocks in pages_blocks.items():
             page = doc[page_num]
 
-            # 注册 CJK 字体到页面
+            # Step 1: redact 删除所有原始文字区域（真正擦除，不只是覆盖）
+            for block in page_blocks:
+                # 稍微扩大 rect 确保完整覆盖
+                rect = fitz.Rect(
+                    block.x - 1,
+                    block.y - 1,
+                    block.x + block.width + 1,
+                    block.y + block.height + 1,
+                )
+                page.add_redact_annot(rect, fill=(1, 1, 1))
+            page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+
+            # Step 2: 注册 CJK 字体
             font_name = "helv"
             if cjk_font_path:
                 try:
@@ -71,24 +83,26 @@ class PDFProcessor(BaseProcessor):
                 except Exception:
                     pass
 
+            # Step 3: 写入译文
             for block in page_blocks:
                 rect = fitz.Rect(block.x, block.y, block.x + block.width, block.y + block.height)
-                # 白色矩形覆盖原文字
-                page.draw_rect(rect, color=(1, 1, 1), fill=(1, 1, 1))
                 color = self._int_to_rgb(block.metadata.get("color", 0))
-                y_pos = block.y + block.height * 0.85
+                # origin 是 baseline 坐标，直接用更准确
+                origin = block.metadata.get("origin")
+                if origin:
+                    insert_pt = fitz.Point(origin[0], origin[1])
+                else:
+                    insert_pt = fitz.Point(block.x, block.y + block.height * 0.85)
 
-                # 先尝试用 CJK 字体写入，失败则用 textbox 自动换行
                 try:
                     page.insert_text(
-                        (block.x, y_pos),
+                        insert_pt,
                         block.text,
                         fontname=font_name,
                         fontsize=block.font_size,
                         color=color,
                     )
                 except Exception:
-                    # 最后兜底：用 insert_textbox 塞进原 bbox
                     page.insert_textbox(
                         rect,
                         block.text,
@@ -98,7 +112,7 @@ class PDFProcessor(BaseProcessor):
                         align=0,
                     )
 
-        doc.save(output_path)
+        doc.save(output_path, garbage=4, deflate=True)
         doc.close()
 
     @staticmethod
