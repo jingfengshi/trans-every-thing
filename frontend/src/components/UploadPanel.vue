@@ -9,7 +9,7 @@
       @drop.prevent="onDrop"
       @click="$refs.fileInput.click()"
     >
-      <input ref="fileInput" type="file" accept=".pdf" hidden @change="onFileChange" />
+      <input ref="fileInput" type="file" accept=".pdf,.xlsx,.xls" hidden @change="onFileChange" />
       <div class="drop-icon">
         <svg v-if="!file" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -25,7 +25,7 @@
         <template v-else>{{ file.name }}</template>
       </div>
       <div class="drop-secondary">
-        {{ file ? ((file.size / 1024 / 1024).toFixed(2) + ' MB') : '支持 PDF 格式，最大 50MB' }}
+        {{ file ? ((file.size / 1024 / 1024).toFixed(2) + ' MB') : '支持 PDF / Excel 格式，最大 50MB' }}
       </div>
     </div>
 

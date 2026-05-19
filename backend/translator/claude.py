@@ -11,7 +11,11 @@ LANG_NAMES = {
 class ClaudeTranslator(BaseTranslator):
     def __init__(self, api_key: str | None = None):
         self._api_key = api_key or os.environ.get("CLAUDE_API_KEY", "")
-        self.client = anthropic.Anthropic(api_key=self._api_key)
+        base_url = os.environ.get("ANTHROPIC_BASE_URL")
+        kwargs = {"auth_token": self._api_key}
+        if base_url:
+            kwargs["base_url"] = base_url
+        self.client = anthropic.Anthropic(**kwargs)
 
     def translate(self, texts: list[str], target_lang: str, style_prompt: str = "") -> list[str]:
         lang_name = LANG_NAMES.get(target_lang, target_lang)

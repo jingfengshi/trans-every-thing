@@ -37,7 +37,8 @@ def translate_file(self, task_id: str, file_path: str, engine: str, target_lang:
             block.text = translated
 
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        output_path = str(OUTPUT_DIR / f"{task_id}_translated.pdf")
+        ext = Path(file_path).suffix.lower()
+        output_path = str(OUTPUT_DIR / f"{task_id}_translated{ext}")
         processor.rebuild(file_path, blocks, output_path)
 
         return {"output_path": output_path}

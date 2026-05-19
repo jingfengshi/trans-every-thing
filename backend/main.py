@@ -67,13 +67,24 @@ def get_status(task_id: str):
         return {"task_id": task_id, "status": state.lower(), "progress": 0.0, "error": None}
 
 
+MEDIA_TYPES = {
+    ".pdf":  "application/pdf",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls":  "application/vnd.ms-excel",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
 @app.get("/api/download/{task_id}")
 def download_result(task_id: str):
-    output_path = OUTPUT_DIR / f"{task_id}_translated.pdf"
-    if not output_path.exists():
+    # 动态查找输出文件（不限后缀）
+    matches = list(OUTPUT_DIR.glob(f"{task_id}_translated.*"))
+    if not matches:
         raise HTTPException(404, "Result not ready or not found")
+    output_path = matches[0]
+    ext = output_path.suffix.lower()
+    media_type = MEDIA_TYPES.get(ext, "application/octet-stream")
     return FileResponse(
         str(output_path),
-        media_type="application/pdf",
-        filename=f"{task_id}_translated.pdf",
+        media_type=media_type,
+        filename=output_path.name,
     )

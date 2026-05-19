@@ -61,7 +61,9 @@ async function onSubmitted({ taskId: id, file }) {
       if (data.status === 'done') {
         clearInterval(pollTimer)
         stage.value = 'done'
-        showCompare.value = true
+        // 只有 PDF 支持对比预览
+        const isPdf = originalFile.value?.name?.toLowerCase().endsWith('.pdf')
+        if (isPdf) showCompare.value = true
       }
       else if (data.status === 'failed') clearInterval(pollTimer)
     } catch (e) { console.error(e) }
