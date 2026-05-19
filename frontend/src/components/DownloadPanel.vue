@@ -14,7 +14,7 @@
     </div>
 
     <div class="title">翻译完成</div>
-    <div class="subtitle">PDF 已保留原始排版，可对比预览或直接下载</div>
+    <div class="subtitle">{{ subtitle }}</div>
 
     <button class="btn-compare" @click="$emit('compare')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -29,7 +29,7 @@
         <path d="M12 4v12M12 16l-4-4M12 16l4-4" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M4 20h16" stroke-linecap="round"/>
       </svg>
-      下载译文 PDF
+      {{ downloadLabel }}
     </a>
 
     <button class="btn-reset" @click="$emit('reset')">
@@ -39,10 +39,31 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { getDownloadUrl } from '../api.js'
-const props = defineProps({ taskId: String })
+
+const props = defineProps({
+  taskId: String,
+  fileName: String,   // 原始文件名，用于判断类型
+})
 defineEmits(['reset', 'compare'])
+
 const downloadUrl = getDownloadUrl(props.taskId)
+
+const isExcel = computed(() => /\.(xlsx|xls)$/i.test(props.fileName || ''))
+const isPdf   = computed(() => /\.pdf$/i.test(props.fileName || ''))
+
+const subtitle = computed(() => {
+  if (isExcel.value) return '已翻译所有文字单元格，样式完整保留，可对比预览或下载'
+  if (isPdf.value)   return 'PDF 已保留原始排版，可对比预览或直接下载'
+  return '翻译完成，可对比预览或下载'
+})
+
+const downloadLabel = computed(() => {
+  if (isExcel.value) return '下载译文 Excel'
+  if (isPdf.value)   return '下载译文 PDF'
+  return '下载译文'
+})
 </script>
 
 <style scoped>
@@ -77,8 +98,6 @@ const downloadUrl = getDownloadUrl(props.taskId)
 }
 
 .btn-download {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 12px 36px;
   display: inline-flex; align-items: center; gap: 8px;
   padding: 14px 36px;
   background: linear-gradient(135deg, #7c3aed, #4f46e5);

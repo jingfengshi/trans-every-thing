@@ -11,8 +11,8 @@
 
     <main class="main">
       <div class="hero" v-if="stage === 'upload'">
-        <h1>PDF 智能翻译</h1>
-        <p>保留原始排版，多引擎驱动，一键输出译文</p>
+        <h1>文档智能翻译</h1>
+        <p>支持 PDF / Excel，保留原始排版，多引擎驱动</p>
       </div>
 
       <UploadPanel v-if="stage === 'upload'" @submitted="onSubmitted" />
@@ -22,7 +22,7 @@
         :progress="taskStatus.progress"
         :error="taskStatus.error"
       />
-      <DownloadPanel v-if="stage === 'done'" :task-id="taskId" @reset="reset" @compare="showCompare = true" />
+      <DownloadPanel v-if="stage === 'done'" :task-id="taskId" :file-name="originalFile?.name" @reset="reset" @compare="showCompare = true" />
 
     <!-- 全屏对比预览：PDF -->
     <CompareViewer
