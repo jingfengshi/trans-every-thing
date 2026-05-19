@@ -24,9 +24,17 @@
       />
       <DownloadPanel v-if="stage === 'done'" :task-id="taskId" @reset="reset" @compare="showCompare = true" />
 
-    <!-- 全屏对比预览 -->
+    <!-- 全屏对比预览：PDF -->
     <CompareViewer
-      v-if="showCompare && taskId && originalFile"
+      v-if="showCompare && taskId && originalFile && isPdf"
+      :task-id="taskId"
+      :original-file="originalFile"
+      @close="showCompare = false"
+    />
+
+    <!-- 全屏对比预览：Excel -->
+    <ExcelCompareViewer
+      v-if="showCompare && taskId && originalFile && isExcel"
       :task-id="taskId"
       :original-file="originalFile"
       @close="showCompare = false"
@@ -36,11 +44,12 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import UploadPanel from './components/UploadPanel.vue'
 import ProgressBar from './components/ProgressBar.vue'
 import DownloadPanel from './components/DownloadPanel.vue'
 import CompareViewer from './components/CompareViewer.vue'
+import ExcelCompareViewer from './components/ExcelCompareViewer.vue'
 import { getStatus } from './api.js'
 
 const stage = ref('upload')
@@ -49,6 +58,9 @@ const originalFile = ref(null)
 const taskStatus = ref({ status: 'pending', progress: 0, error: null })
 const showCompare = ref(false)
 let pollTimer = null
+
+const isPdf   = computed(() => originalFile.value?.name?.toLowerCase().endsWith('.pdf'))
+const isExcel = computed(() => /\.(xlsx|xls)$/i.test(originalFile.value?.name || ''))
 
 async function onSubmitted({ taskId: id, file }) {
   taskId.value = id
@@ -61,9 +73,7 @@ async function onSubmitted({ taskId: id, file }) {
       if (data.status === 'done') {
         clearInterval(pollTimer)
         stage.value = 'done'
-        // 只有 PDF 支持对比预览
-        const isPdf = originalFile.value?.name?.toLowerCase().endsWith('.pdf')
-        if (isPdf) showCompare.value = true
+        showCompare.value = true
       }
       else if (data.status === 'failed') clearInterval(pollTimer)
     } catch (e) { console.error(e) }
