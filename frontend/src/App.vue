@@ -22,7 +22,15 @@
         :progress="taskStatus.progress"
         :error="taskStatus.error"
       />
-      <DownloadPanel v-if="stage === 'done'" :task-id="taskId" @reset="reset" />
+      <DownloadPanel v-if="stage === 'done'" :task-id="taskId" @reset="reset" @compare="showCompare = true" />
+
+    <!-- 全屏对比预览 -->
+    <CompareViewer
+      v-if="showCompare && taskId && originalFile"
+      :task-id="taskId"
+      :original-file="originalFile"
+      @close="showCompare = false"
+    />
     </main>
   </div>
 </template>
@@ -32,21 +40,29 @@ import { ref, onUnmounted } from 'vue'
 import UploadPanel from './components/UploadPanel.vue'
 import ProgressBar from './components/ProgressBar.vue'
 import DownloadPanel from './components/DownloadPanel.vue'
+import CompareViewer from './components/CompareViewer.vue'
 import { getStatus } from './api.js'
 
 const stage = ref('upload')
 const taskId = ref(null)
+const originalFile = ref(null)
 const taskStatus = ref({ status: 'pending', progress: 0, error: null })
+const showCompare = ref(false)
 let pollTimer = null
 
-async function onSubmitted(id) {
+async function onSubmitted({ taskId: id, file }) {
   taskId.value = id
+  originalFile.value = file
   stage.value = 'progress'
   pollTimer = setInterval(async () => {
     try {
       const data = await getStatus(taskId.value)
       taskStatus.value = data
-      if (data.status === 'done') { clearInterval(pollTimer); stage.value = 'done' }
+      if (data.status === 'done') {
+        clearInterval(pollTimer)
+        stage.value = 'done'
+        showCompare.value = true
+      }
       else if (data.status === 'failed') clearInterval(pollTimer)
     } catch (e) { console.error(e) }
   }, 2000)
@@ -56,7 +72,9 @@ function reset() {
   clearInterval(pollTimer)
   stage.value = 'upload'
   taskId.value = null
+  originalFile.value = null
   taskStatus.value = { status: 'pending', progress: 0, error: null }
+  showCompare.value = false
 }
 
 onUnmounted(() => clearInterval(pollTimer))

@@ -92,7 +92,7 @@ async function submit() {
   loading.value = true
   try {
     const data = await submitTranslate(file.value, engine.value, targetLang.value, stylePrompt.value)
-    emit('submitted', data.task_id)
+    emit('submitted', { taskId: data.task_id, file: file.value })
   } finally { loading.value = false }
 }
 </script>

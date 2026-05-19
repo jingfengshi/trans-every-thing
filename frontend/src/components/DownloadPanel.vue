@@ -14,14 +14,22 @@
     </div>
 
     <div class="title">翻译完成</div>
-    <div class="subtitle">PDF 已保留原始排版，可立即下载</div>
+    <div class="subtitle">PDF 已保留原始排版，可对比预览或直接下载</div>
+
+    <button class="btn-compare" @click="$emit('compare')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="9" height="18" rx="1"/>
+        <rect x="13" y="3" width="9" height="18" rx="1"/>
+      </svg>
+      对比预览
+    </button>
 
     <a :href="downloadUrl" download class="btn-download">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M12 4v12M12 16l-4-4M12 16l4-4" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M4 20h16" stroke-linecap="round"/>
       </svg>
-      下载翻译 PDF
+      下载译文 PDF
     </a>
 
     <button class="btn-reset" @click="$emit('reset')">
@@ -33,7 +41,7 @@
 <script setup>
 import { getDownloadUrl } from '../api.js'
 const props = defineProps({ taskId: String })
-defineEmits(['reset'])
+defineEmits(['reset', 'compare'])
 const downloadUrl = getDownloadUrl(props.taskId)
 </script>
 
@@ -48,8 +56,29 @@ const downloadUrl = getDownloadUrl(props.taskId)
 .title { font-size: 24px; font-weight: 700; color: rgba(255,255,255,0.95); }
 .subtitle { font-size: 14px; color: rgba(255,255,255,0.35); margin-top: -4px; }
 
-.btn-download {
+.btn-compare {
   margin-top: 12px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 36px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
+  border-radius: 12px;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+  width: 100%; justify-content: center;
+}
+.btn-compare:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(160,110,255,0.5);
+  color: white;
+}
+
+.btn-download {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 36px;
   display: inline-flex; align-items: center; gap: 8px;
   padding: 14px 36px;
   background: linear-gradient(135deg, #7c3aed, #4f46e5);
