@@ -13,9 +13,13 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-    env_file: .env
     environment:
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}
+      - ANTHROPIC_BASE_URL=http://llm.moontontech.net
       - REDIS_URL=redis://host.docker.internal:6379/0
+      - MAX_FILE_SIZE_MB=50
     volumes:
       - ./backend:/app
       - ./tmp:/tmp/trans
@@ -26,9 +30,13 @@ services:
   worker:
     build: ./backend
     command: celery -A tasks worker --loglevel=info --concurrency=2
-    env_file: .env
     environment:
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}
+      - ANTHROPIC_BASE_URL=http://llm.moontontech.net
       - REDIS_URL=redis://host.docker.internal:6379/0
+      - MAX_FILE_SIZE_MB=50
     volumes:
       - ./backend:/app
       - ./tmp:/tmp/trans
