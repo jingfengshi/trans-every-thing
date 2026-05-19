@@ -119,11 +119,18 @@ const EngineIcon = defineComponent({
   setup(props) {
     return () => {
       if (props.engine === 'claude') {
-        // Anthropic / Claude logo mark
-        return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', xmlns: 'http://www.w3.org/2000/svg' }, [
+        // Claude classic orange gradient circle icon
+        return h('svg', { width: 18, height: 18, viewBox: '0 0 40 40', fill: 'none', xmlns: 'http://www.w3.org/2000/svg' }, [
+          h('defs', {}, [
+            h('radialGradient', { id: 'claude-g', cx: '50%', cy: '35%', r: '65%' }, [
+              h('stop', { offset: '0%', 'stop-color': '#F5A623' }),
+              h('stop', { offset: '100%', 'stop-color': '#D4580A' }),
+            ])
+          ]),
+          h('circle', { cx: '20', cy: '20', r: '20', fill: 'url(#claude-g)' }),
           h('path', {
-            d: 'M13.827 3.52L8.471 18h2.883l1.09-3.101h5.11L18.645 18h2.883L16.172 3.52h-2.345zm-.364 8.973l1.863-5.31 1.862 5.31H13.463zM5.857 3.52L.5 18h2.883l1.09-3.101h5.11L10.674 18h2.883L8.201 3.52H5.857z',
-            fill: '#CC9B7A'
+            d: 'M22.8 11L17.2 27h3.2l1.2-3.4h5.6L28.4 27h3.2L26 11h-3.2zm-.4 9.8l2-5.8 2 5.8h-4zM11.6 11L6 27h3.2l1.2-3.4h5.6L17.2 27h3.2L14.8 11h-3.2zm-.4 9.8l2-5.8 2 5.8h-4z',
+            fill: 'white'
           })
         ])
       }
